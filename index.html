@@ -2,22 +2,39 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<title>Інвест калькулятор PRO ($)</title>
+<title>Invest PRO 3.0 ($)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
 <style>
+:root{
+ --bg:#f4f6f9;
+ --card:#ffffff;
+ --text:#1b1f24;
+ --accent:#2563eb;
+ --result:#eef2ff;
+}
+body.dark{
+ --bg:#0f172a;
+ --card:#1e293b;
+ --text:#f1f5f9;
+ --accent:#3b82f6;
+ --result:#1e3a8a;
+}
 body{
  font-family:-apple-system,BlinkMacSystemFont,sans-serif;
- background:#f4f6f9;
+ background:var(--bg);
+ color:var(--text);
  padding:30px;
 }
 .card{
- background:white;
+ background:var(--card);
  padding:25px;
  border-radius:16px;
  max-width:1100px;
  margin:auto;
- box-shadow:0 10px 25px rgba(0,0,0,.08);
 }
 .grid{
  display:grid;
@@ -30,22 +47,23 @@ input,select{
  width:100%;
  padding:10px;
  border-radius:8px;
- border:1px solid #ddd;
+ border:1px solid #ccc;
 }
 button{
  padding:12px 18px;
  border:none;
- background:#2563eb;
+ background:var(--accent);
  color:white;
  border-radius:10px;
  font-weight:600;
  cursor:pointer;
  margin-top:10px;
+ margin-right:10px;
 }
 .result{
  margin-top:25px;
  padding:20px;
- background:#eef2ff;
+ background:var(--result);
  border-radius:12px;
 }
 </style>
@@ -55,12 +73,15 @@ button{
 
 <div class="card">
 
-<h2>Інвест-калькулятор PRO ($)</h2>
+<h2>Invest PRO 3.0 ($)</h2>
+
+<button onclick="toggleTheme()">🌙 / ☀️</button>
+<button onclick="generatePDF()">PDF</button>
 
 <div class="field">
 <label>Режим</label>
 <select id="mode">
-<option value="flip">Фліп (перепродаж)</option>
+<option value="flip">Фліп</option>
 <option value="rent">Оренда</option>
 </select>
 </div>
@@ -79,26 +100,17 @@ button{
 <input type="number" id="extra" value="10000">
 </div>
 
-<!-- FLIP -->
-
 <div class="flip">
 <div class="field">
-<label>Термін інвестування (роки)</label>
+<label>Термін (роки)</label>
 <input type="number" id="years" value="2">
 </div>
 
 <div class="field">
-<label>Ціна продажу ($) (або залишити пустим)</label>
-<input type="number" id="sell">
-</div>
-
-<div class="field">
-<label>АБО бажана річна дохідність (%)</label>
-<input type="number" id="targetAnnual">
+<label>Ціна продажу ($)</label>
+<input type="number" id="sell" value="85000">
 </div>
 </div>
-
-<!-- RENT -->
 
 <div class="rent" style="display:none;">
 <div class="field">
@@ -110,11 +122,6 @@ button{
 <label>Річні витрати ($)</label>
 <input type="number" id="rentExpenses" value="1500">
 </div>
-
-<div class="field">
-<label>АБО бажана окупність (років)</label>
-<input type="number" id="targetPayback">
-</div>
 </div>
 
 <button onclick="calculate()">Розрахувати</button>
@@ -123,21 +130,27 @@ button{
 
 <div>
 <div class="result" id="output"></div>
+<canvas id="chart" style="margin-top:20px;"></canvas>
 </div>
 
 </div>
+
 </div>
 
 <script>
 
 const $=id=>document.getElementById(id);
-const fmt=n=>Number(n).toLocaleString("en-US");
+let chart;
 
 $("mode").addEventListener("change",()=>{
  const mode=$("mode").value;
  document.querySelector(".flip").style.display=mode==="flip"?"block":"none";
  document.querySelector(".rent").style.display=mode==="rent"?"block":"none";
 });
+
+function toggleTheme(){
+ document.body.classList.toggle("dark");
+}
 
 function calculate(){
 
@@ -146,35 +159,47 @@ function calculate(){
  const extra=+$("extra").value;
  const total=buy+extra;
 
+ if(chart) chart.destroy();
+
  if(mode==="flip"){
 
   const years=+$("years").value;
   const sell=+$("sell").value;
-  const targetAnnual=+$("targetAnnual").value;
 
-  if(sell){
+  const profit=sell-total;
+  const roi=(profit/total)*100;
+  const annual=(Math.pow((sell/total),(1/years))-1)*100;
 
-   const profit=sell-total;
-   const roi=(profit/total)*100;
-   const annual=(Math.pow((sell/total),(1/years))-1)*100;
+  $("output").innerHTML=`
+  <b>Загальна інвестиція:</b> $${total}<br>
+  <b>Чистий прибуток:</b> $${profit}<br>
+  <b>ROI:</b> ${roi.toFixed(2)}%<br>
+  <b>Річна дохідність:</b> ${annual.toFixed(2)}%<br><br>
 
-   $("output").innerHTML=`
-   Загальна інвестиція: <b>$${fmt(total)}</b><br><br>
-   Чистий прибуток: <b>$${fmt(profit)}</b><br>
-   ROI: <b>${roi.toFixed(2)}%</b><br>
-   Річна дохідність: <b>${annual.toFixed(2)}%</b>
-   `;
+  <hr>
 
-  } else if(targetAnnual){
+  <b>Для ріелтора:</b><br>
+  ROI = (Прибуток / Інвестиція) × 100<br>
+  Annual = (Фінальна вартість / Інвестиція)^(1/роки) − 1
+  `;
 
-   const neededSell=total*Math.pow((1+targetAnnual/100),years);
-
-   $("output").innerHTML=`
-   Для ${targetAnnual}% річних за ${years} роки потрібно продати за:<br><br>
-   <b>$${fmt(neededSell.toFixed(0))}</b>
-   `;
-
+  const values=[];
+  for(let i=0;i<=years;i++){
+   values.push(total*Math.pow((sell/total),(i/years)));
   }
+
+  chart=new Chart($("chart"),{
+   type:"line",
+   data:{
+    labels:values.map((_,i)=>"Рік "+i),
+    datasets:[{
+     label:"Зростання капіталу",
+     data:values,
+     borderColor:"#2563eb",
+     fill:false
+    }]
+   }
+  });
 
  }
 
@@ -182,37 +207,63 @@ function calculate(){
 
   const rent=+$("rentMonthly").value;
   const expenses=+$("rentExpenses").value;
-  const targetPayback=+$("targetPayback").value;
 
   const annualIncome=rent*12;
   const net=annualIncome-expenses;
   const roi=(net/total)*100;
   const payback=total/net;
 
-  if(targetPayback){
+  $("output").innerHTML=`
+  <b>Загальна інвестиція:</b> $${total}<br>
+  <b>Річний чистий дохід:</b> $${net}<br>
+  <b>ROI:</b> ${roi.toFixed(2)}%<br>
+  <b>Окупність:</b> ${payback.toFixed(1)} років<br><br>
 
-   const neededNet=total/targetPayback;
-   const neededRent=(neededNet+expenses)/12;
+  <hr>
 
-   $("output").innerHTML=`
-   Для окупності ${targetPayback} років потрібно:<br><br>
-   Місячна оренда ≈ <b>$${fmt(neededRent.toFixed(0))}</b>
-   `;
+  <b>Для ріелтора:</b><br>
+  ROI = Чистий річний дохід / Інвестиція<br>
+  Payback = Інвестиція / Чистий річний дохід
+  `;
 
-  } else {
-
-   $("output").innerHTML=`
-   Загальна інвестиція: <b>$${fmt(total)}</b><br><br>
-   Річний дохід: <b>$${fmt(annualIncome)}</b><br>
-   Чистий річний дохід: <b>$${fmt(net)}</b><br><br>
-   ROI: <b>${roi.toFixed(2)}%</b><br>
-   Окупність: <b>${payback.toFixed(1)} років</b>
-   `;
-
+  const values=[];
+  for(let i=0;i<=Math.ceil(payback);i++){
+   values.push(net*i);
   }
+
+  chart=new Chart($("chart"),{
+   type:"line",
+   data:{
+    labels:values.map((_,i)=>"Рік "+i),
+    datasets:[{
+     label:"Накопичення доходу",
+     data:values,
+     borderColor:"#16a34a",
+     fill:false
+    }]
+   }
+  });
 
  }
 
+}
+
+async function generatePDF(){
+
+ const { jsPDF } = window.jspdf;
+ const doc=new jsPDF();
+
+ doc.text("Invest PRO Report",20,20);
+
+ const text=document.getElementById("output").innerText;
+ doc.text(text,20,40);
+
+ const canvas=document.getElementById("chart");
+ const img=canvas.toDataURL("image/png",1.0);
+
+ doc.addImage(img,"PNG",15,80,180,90);
+
+ doc.save("Invest_PRO_Report.pdf");
 }
 
 calculate();
