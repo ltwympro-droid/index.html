@@ -1,1 +1,189 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+<meta charset="UTF-8">
+<title>Інвест калькулятор</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
 
+<style>
+body{
+ font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+ background:#f4f6f9;
+ padding:30px;
+}
+.card{
+ background:white;
+ padding:25px;
+ border-radius:16px;
+ max-width:1000px;
+ margin:auto;
+ box-shadow:0 10px 25px rgba(0,0,0,.08);
+}
+.grid{
+ display:grid;
+ grid-template-columns:1fr 1fr;
+ gap:20px;
+}
+.field{margin-bottom:15px;}
+label{font-weight:600;display:block;margin-bottom:6px;}
+input,select{
+ width:100%;
+ padding:10px;
+ border-radius:8px;
+ border:1px solid #ddd;
+}
+button{
+ padding:12px 18px;
+ border:none;
+ background:#2563eb;
+ color:white;
+ border-radius:10px;
+ font-weight:600;
+ cursor:pointer;
+ margin-top:10px;
+}
+.result{
+ margin-top:25px;
+ padding:20px;
+ background:#eef2ff;
+ border-radius:12px;
+}
+.modeBox{
+ margin-bottom:20px;
+}
+</style>
+</head>
+
+<body>
+
+<div class="card">
+
+<h2>Універсальний інвест-калькулятор</h2>
+
+<div class="modeBox">
+<label>Режим</label>
+<select id="mode">
+<option value="flip">Фліп (перепродаж)</option>
+<option value="rent">Оренда</option>
+</select>
+</div>
+
+<div class="grid">
+
+<div>
+
+<div class="field">
+<label>Ціна купівлі</label>
+<input type="number" id="buyPrice" value="2000000">
+</div>
+
+<div class="field">
+<label>Додаткові витрати (ремонт, податки)</label>
+<input type="number" id="extraCosts" value="300000">
+</div>
+
+<div class="field flipOnly">
+<label>Очікувана ціна продажу</label>
+<input type="number" id="sellPrice" value="2800000">
+</div>
+
+<div class="field flipOnly">
+<label>Термін інвестування (роки)</label>
+<input type="number" id="yearsFlip" value="2">
+</div>
+
+<div class="field rentOnly" style="display:none;">
+<label>Оренда в місяць</label>
+<input type="number" id="rentMonthly" value="18000">
+</div>
+
+<div class="field rentOnly" style="display:none;">
+<label>Річні витрати (комунальні, простої, податки)</label>
+<input type="number" id="rentExpenses" value="40000">
+</div>
+
+</div>
+
+<div>
+
+<div class="result" id="output"></div>
+
+<button onclick="calculate()">Розрахувати</button>
+
+</div>
+
+</div>
+
+</div>
+
+<script>
+
+const $=id=>document.getElementById(id);
+const fmt=n=>Number(n).toLocaleString("uk-UA");
+
+$("mode").addEventListener("change",()=>{
+ const mode=$("mode").value;
+
+ document.querySelectorAll(".flipOnly").forEach(el=>{
+  el.style.display=mode==="flip"?"block":"none";
+ });
+
+ document.querySelectorAll(".rentOnly").forEach(el=>{
+  el.style.display=mode==="rent"?"block":"none";
+ });
+
+});
+
+function calculate(){
+
+ const mode=$("mode").value;
+ const buy=+$("buyPrice").value;
+ const extra=+$("extraCosts").value;
+ const totalInvestment=buy+extra;
+
+ if(mode==="flip"){
+
+  const sell=+$("sellPrice").value;
+  const years=+$("yearsFlip").value;
+
+  const profit=sell-totalInvestment;
+  const roi=(profit/totalInvestment)*100;
+  const annual=(Math.pow((sell/totalInvestment),(1/years))-1)*100;
+
+  $("output").innerHTML=`
+  Загальна інвестиція: <b>${fmt(totalInvestment)} грн</b><br><br>
+  Чистий прибуток: <b>${fmt(profit)} грн</b><br>
+  ROI: <b>${roi.toFixed(2)}%</b><br>
+  Річна дохідність: <b>${annual.toFixed(2)}%</b>
+  `;
+
+ }
+
+ if(mode==="rent"){
+
+  const rent=+$("rentMonthly").value;
+  const expenses=+$("rentExpenses").value;
+
+  const annualIncome=rent*12;
+  const netAnnual=annualIncome-expenses;
+  const roi=(netAnnual/totalInvestment)*100;
+  const payback=totalInvestment/netAnnual;
+
+  $("output").innerHTML=`
+  Загальна інвестиція: <b>${fmt(totalInvestment)} грн</b><br><br>
+  Річний дохід: <b>${fmt(annualIncome)} грн</b><br>
+  Чистий річний дохід: <b>${fmt(netAnnual)} грн</b><br><br>
+  ROI: <b>${roi.toFixed(2)}%</b><br>
+  Окупність: <b>${payback.toFixed(1)} років</b>
+  `;
+
+ }
+
+}
+
+calculate();
+
+</script>
+
+</body>
+</html>
