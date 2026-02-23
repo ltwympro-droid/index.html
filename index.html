@@ -2,7 +2,7 @@
 <html lang="uk">
 <head>
 <meta charset="UTF-8">
-<title>Інвест калькулятор</title>
+<title>Інвест калькулятор PRO ($)</title>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 
 <style>
@@ -15,14 +15,14 @@ body{
  background:white;
  padding:25px;
  border-radius:16px;
- max-width:1000px;
+ max-width:1100px;
  margin:auto;
  box-shadow:0 10px 25px rgba(0,0,0,.08);
 }
 .grid{
  display:grid;
  grid-template-columns:1fr 1fr;
- gap:20px;
+ gap:30px;
 }
 .field{margin-bottom:15px;}
 label{font-weight:600;display:block;margin-bottom:6px;}
@@ -48,9 +48,6 @@ button{
  background:#eef2ff;
  border-radius:12px;
 }
-.modeBox{
- margin-bottom:20px;
-}
 </style>
 </head>
 
@@ -58,9 +55,9 @@ button{
 
 <div class="card">
 
-<h2>Універсальний інвест-калькулятор</h2>
+<h2>Інвест-калькулятор PRO ($)</h2>
 
-<div class="modeBox">
+<div class="field">
 <label>Режим</label>
 <select id="mode">
 <option value="flip">Фліп (перепродаж)</option>
@@ -73,89 +70,111 @@ button{
 <div>
 
 <div class="field">
-<label>Ціна купівлі</label>
-<input type="number" id="buyPrice" value="2000000">
+<label>Ціна купівлі ($)</label>
+<input type="number" id="buy" value="60000">
 </div>
 
 <div class="field">
-<label>Додаткові витрати (ремонт, податки)</label>
-<input type="number" id="extraCosts" value="300000">
+<label>Додаткові витрати ($)</label>
+<input type="number" id="extra" value="10000">
 </div>
 
-<div class="field flipOnly">
-<label>Очікувана ціна продажу</label>
-<input type="number" id="sellPrice" value="2800000">
-</div>
+<!-- FLIP -->
 
-<div class="field flipOnly">
+<div class="flip">
+<div class="field">
 <label>Термін інвестування (роки)</label>
-<input type="number" id="yearsFlip" value="2">
+<input type="number" id="years" value="2">
 </div>
 
-<div class="field rentOnly" style="display:none;">
-<label>Оренда в місяць</label>
-<input type="number" id="rentMonthly" value="18000">
+<div class="field">
+<label>Ціна продажу ($) (або залишити пустим)</label>
+<input type="number" id="sell">
 </div>
 
-<div class="field rentOnly" style="display:none;">
-<label>Річні витрати (комунальні, простої, податки)</label>
-<input type="number" id="rentExpenses" value="40000">
+<div class="field">
+<label>АБО бажана річна дохідність (%)</label>
+<input type="number" id="targetAnnual">
+</div>
 </div>
 
+<!-- RENT -->
+
+<div class="rent" style="display:none;">
+<div class="field">
+<label>Оренда в місяць ($)</label>
+<input type="number" id="rentMonthly" value="700">
 </div>
 
-<div>
+<div class="field">
+<label>Річні витрати ($)</label>
+<input type="number" id="rentExpenses" value="1500">
+</div>
 
-<div class="result" id="output"></div>
+<div class="field">
+<label>АБО бажана окупність (років)</label>
+<input type="number" id="targetPayback">
+</div>
+</div>
 
 <button onclick="calculate()">Розрахувати</button>
 
 </div>
 
+<div>
+<div class="result" id="output"></div>
 </div>
 
+</div>
 </div>
 
 <script>
 
 const $=id=>document.getElementById(id);
-const fmt=n=>Number(n).toLocaleString("uk-UA");
+const fmt=n=>Number(n).toLocaleString("en-US");
 
 $("mode").addEventListener("change",()=>{
  const mode=$("mode").value;
-
- document.querySelectorAll(".flipOnly").forEach(el=>{
-  el.style.display=mode==="flip"?"block":"none";
- });
-
- document.querySelectorAll(".rentOnly").forEach(el=>{
-  el.style.display=mode==="rent"?"block":"none";
- });
-
+ document.querySelector(".flip").style.display=mode==="flip"?"block":"none";
+ document.querySelector(".rent").style.display=mode==="rent"?"block":"none";
 });
 
 function calculate(){
 
  const mode=$("mode").value;
- const buy=+$("buyPrice").value;
- const extra=+$("extraCosts").value;
- const totalInvestment=buy+extra;
+ const buy=+$("buy").value;
+ const extra=+$("extra").value;
+ const total=buy+extra;
 
  if(mode==="flip"){
 
-  const sell=+$("sellPrice").value;
-  const years=+$("yearsFlip").value;
+  const years=+$("years").value;
+  const sell=+$("sell").value;
+  const targetAnnual=+$("targetAnnual").value;
 
-  const profit=sell-totalInvestment;
-  const roi=(profit/totalInvestment)*100;
-  const annual=(Math.pow((sell/totalInvestment),(1/years))-1)*100;
+  if(sell){
 
-  $("output").innerHTML=`
-  Загальна інвестиція: <b>${fmt(totalInvestment)} грн</b><br><br>
-  Чистий прибуток: <b>${fmt(profit)} грн</b><br>
-  ROI: <b>${roi.toFixed(2)}%</b><br>
-  Річна дохідність: <b>${annual.toFixed(2)}%</b>
-  `;
+   const profit=sell-total;
+   const roi=(profit/total)*100;
+   const annual=(Math.pow((sell/total),(1/years))-1)*100;
+
+   $("output").innerHTML=`
+   Загальна інвестиція: <b>$${fmt(total)}</b><br><br>
+   Чистий прибуток: <b>$${fmt(profit)}</b><br>
+   ROI: <b>${roi.toFixed(2)}%</b><br>
+   Річна дохідність: <b>${annual.toFixed(2)}%</b>
+   `;
+
+  } else if(targetAnnual){
+
+   const neededSell=total*Math.pow((1+targetAnnual/100),years);
+
+   $("output").innerHTML=`
+   Для ${targetAnnual}% річних за ${years} роки потрібно продати за:<br><br>
+   <b>$${fmt(neededSell.toFixed(0))}</b>
+   `;
+
+  }
 
  }
 
@@ -163,19 +182,34 @@ function calculate(){
 
   const rent=+$("rentMonthly").value;
   const expenses=+$("rentExpenses").value;
+  const targetPayback=+$("targetPayback").value;
 
   const annualIncome=rent*12;
-  const netAnnual=annualIncome-expenses;
-  const roi=(netAnnual/totalInvestment)*100;
-  const payback=totalInvestment/netAnnual;
+  const net=annualIncome-expenses;
+  const roi=(net/total)*100;
+  const payback=total/net;
 
-  $("output").innerHTML=`
-  Загальна інвестиція: <b>${fmt(totalInvestment)} грн</b><br><br>
-  Річний дохід: <b>${fmt(annualIncome)} грн</b><br>
-  Чистий річний дохід: <b>${fmt(netAnnual)} грн</b><br><br>
-  ROI: <b>${roi.toFixed(2)}%</b><br>
-  Окупність: <b>${payback.toFixed(1)} років</b>
-  `;
+  if(targetPayback){
+
+   const neededNet=total/targetPayback;
+   const neededRent=(neededNet+expenses)/12;
+
+   $("output").innerHTML=`
+   Для окупності ${targetPayback} років потрібно:<br><br>
+   Місячна оренда ≈ <b>$${fmt(neededRent.toFixed(0))}</b>
+   `;
+
+  } else {
+
+   $("output").innerHTML=`
+   Загальна інвестиція: <b>$${fmt(total)}</b><br><br>
+   Річний дохід: <b>$${fmt(annualIncome)}</b><br>
+   Чистий річний дохід: <b>$${fmt(net)}</b><br><br>
+   ROI: <b>${roi.toFixed(2)}%</b><br>
+   Окупність: <b>${payback.toFixed(1)} років</b>
+   `;
+
+  }
 
  }
 
